@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   Modal, 
@@ -6,11 +6,13 @@ import {
   TextField, 
   Button, 
   Typography, 
-  Fade,
   IconButton,
-  Divider,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Paper,
+  Stepper,
+  Step,
+  StepLabel,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { closeModal, toggleMode } from '../redux/slices/modalSlice';
@@ -21,98 +23,133 @@ const SignInModal = () => {
   const { open, mode } = useSelector((state) => state.modal);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [activeStep, setActiveStep] = useState(0);
 
   const handleClose = () => {
     dispatch(closeModal());
+    setActiveStep(0);
   };
 
   const handleMode = () => {
     dispatch(toggleMode());
+    setActiveStep(0);
+  };
+
+  const handleNext = () => {
+    setActiveStep((prevStep) => prevStep + 1);
+  };
+
+  const handleBack = () => {
+    setActiveStep((prevStep) => prevStep - 1);
+  };
+
+  const renderStepContent = (step) => {
+    switch (step) {
+      case 0:
+        return (
+          <>
+            {mode === 'signup' && (
+              <>
+                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                  <TextField label="First Name" variant="outlined" fullWidth size="small" />
+                  <TextField label="Last Name" variant="outlined" fullWidth size="small" />
+                </Box>
+                <TextField label="Email" variant="outlined" fullWidth size="small" type="email" sx={{ mb: 2 }} />
+                <TextField label="Phone Number" variant="outlined" fullWidth size="small" sx={{ mb: 2 }} />
+              </>
+            )}
+            <TextField label="Username" variant="outlined" fullWidth size="small" sx={{ mb: 2 }} />
+            <TextField label="Password" type="password" variant="outlined" fullWidth size="small" sx={{ mb: 2 }} />
+            {mode === 'signup' && (
+              <TextField label="Confirm Password" type="password" variant="outlined" fullWidth size="small" sx={{ mb: 2 }} />
+            )}
+          </>
+        );
+      case 1:
+        return (
+          <TextField 
+            label="Verification Code" 
+            variant="outlined" 
+            fullWidth 
+            size="small" 
+            sx={{ mb: 2 }} 
+            placeholder="Enter the 6-digit code sent to your email"
+          />
+        );
+      default:
+        return null;
+    }
   };
 
   return (
     <Modal open={open} onClose={handleClose}>
-      <Fade in={open} timeout={400}>
-        <Box
+      <Paper
+        elevation={24}
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: isMobile ? '90%' : 400,
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          boxShadow: 24,
+          p: 4,
+        }}
+      >
+        <IconButton
+          aria-label="close"
+          onClick={handleClose}
           sx={{
             position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: isMobile ? '90%' : 400,
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            bgcolor: 'background.paper',
-            borderRadius: 4,
-            boxShadow: 24,
-            p: 4,
+            right: 8,
+            top: 8,
+            color: 'text.secondary',
           }}
         >
-          <IconButton
-            aria-label="close"
-            onClick={handleClose}
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-              color: 'text.secondary',
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
+          <CloseIcon />
+        </IconButton>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', mb:2 }}>
-            <img src={logo} alt="Logo" style={{ width: 50, height: 50, borderRadius: '50%'}} />
-          </Box>
-
-          <Typography variant="h5" component="h3" sx={{ marginBottom: "1rem", textAlign: 'center', fontWeight: 'medium' }}>
-            {mode === 'signin' ? 'Welcome Back!' : 'Create an Account'}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+          <img src={logo} alt="Logo" style={{ width: 60, height: 60, borderRadius: '50%', marginBottom: '1rem' }} />
+          <Typography variant="h5" component="h2" sx={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>
+            Valor Insight
           </Typography>
+        </Box>
 
-          <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {mode === 'signup' && (
-              <>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField label="First Name" variant="outlined" fullWidth size="small" />
-                  <TextField label="Last Name" variant="outlined" fullWidth size="small" />
-                </Box>
-                <TextField label="Email" variant="outlined" fullWidth size="small" type="email" />
-                <TextField label="Phone Number" variant="outlined" fullWidth size="small" />
-              </>
-            )}
-            <TextField label="Username" variant="outlined" fullWidth size="small" />
-            <TextField label="Password" type="password" variant="outlined" fullWidth size="small" />
-            {mode === 'signup' && (
-              <TextField label="Confirm Password" type="password" variant="outlined" fullWidth size="small" />
-            )}
+        <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
+          <Step>
+            <StepLabel>{mode === 'signin' ? 'Sign In' : 'Sign Up'}</StepLabel>
+          </Step>
+          <Step>
+            <StepLabel>Verify</StepLabel>
+          </Step>
+        </Stepper>
 
-            <Button 
-              variant="contained" 
-              color="primary" 
-              fullWidth 
-              sx={{ mt: 2, py: 1, textTransform: 'none', fontSize: '1rem' }}
-            >
-              {mode === 'signin' ? 'Sign In' : 'Sign Up'}
-            </Button>
-          </Box>
+        <Box component="form" sx={{ display: 'flex', flexDirection: 'column' }}>
+          {renderStepContent(activeStep)}
 
-          <Divider sx={{ my: 3 }} />
-
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              {mode === 'signin' ? "Don't have an account?" : "Already have an account?"}
-            </Typography>
-            <Button 
-              variant="outlined" 
-              color="primary" 
-              onClick={handleMode}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+            <Button
+              onClick={activeStep === 0 ? handleMode : handleBack}
               sx={{ textTransform: 'none' }}
             >
-              {mode === 'signin' ? 'Create an Account' : 'Sign In'}
+              {activeStep === 0
+                ? (mode === 'signin' ? 'Create an Account' : 'Back to Sign In')
+                : 'Back'
+              }
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={activeStep === 1 ? handleClose : handleNext}
+              sx={{ textTransform: 'none' }}
+            >
+              {activeStep === 1 ? 'Confirm' : (mode === 'signin' ? 'Sign In' : 'Sign Up')}
             </Button>
           </Box>
         </Box>
-      </Fade>
+      </Paper>
     </Modal>
   );
 };
