@@ -1,54 +1,161 @@
 import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { openModal } from '../redux/slices/modalSlice';
 import logo from '../assets/logo.jpg';
-import Avatar from '@mui/material/Avatar';
-import Button from '@mui/material/Button';
 import SignInModal from './signInModal';
-import SignUpModal from './signUpModal';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  IconButton,
+  Avatar,
+  InputBase,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  useMediaQuery,
+  useTheme,
+  Box,
+  Container,
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
 
 const Header = () => {
-    const [loggedIn, setLoggedIn] = useState(false);
-    const [signInOpen, setSignInOpen] = useState(false);
-    const [signUpOpen, setSignUpOpen] = useState(false);
+  const dispatch = useDispatch();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { loggedIn } = useSelector((state) => state.user);
 
-    const handleSignInOpen = () => setSignInOpen(true);
-    const handleSignInClose = () => setSignInOpen(false);
-    const handleSignUpOpen = () => setSignUpOpen(true);
-    const handleSignUpClose = () => setSignUpOpen(false);
+  const handleMode = () => {
+    dispatch(openModal());
+  };
 
-    const handleLogin = () => {
-        setLoggedIn(true);
-        setSignInOpen(false);
-    };
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
 
-    return (
-        <header className='w-full flex flex-col sm:flex-row items-center justify-between px-6 sm:px-16 py-4 bg-black'>
-            <div className='flex items-center mb-4 sm:mb-0'>
-                <img src={logo} alt='logo' className='h-10 w-10 mr-2' />
-                <span className='text-xl font-bold text-white'>Valor Insight</span>
-            </div>
-            <nav className='flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-16'>
-                <ul className='flex flex-col sm:flex-row space-y-2 sm:space-y-0 space-x-0 sm:space-x-6 text-white'>
-                    <li>Home</li>
-                    <li>Match Analysis</li>
-                    <li>Fixtures</li>
-                    <li>Prediction</li>
-                </ul>
-                {loggedIn ? (
-                    <Avatar alt="User Avatar" src={logo} />
-                ) : (
-                    <Button variant="contained" color="primary" onClick={handleSignInOpen}>
-                        Sign In
-                    </Button>
-                )}
-            </nav>
+  const menuItems = ['Home', 'Match Analysis', 'Fixtures', 'Prediction'];
 
-            {/* Sign In Modal */}
-            <SignInModal open={signInOpen} handleClose={handleSignInClose} handleLogin={handleLogin} />
+  const drawer = (
+    <Box sx={{ bgcolor: 'background.paper', height: '100%' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
+        <IconButton
+          color="inherit"
+          aria-label="close drawer"
+          edge="end"
+          onClick={handleDrawerToggle}
+        >
+          <CloseIcon />
+        </IconButton>
+      </Box>
+      <List>
+        {menuItems.map((item) => (
+          <ListItem button key={item}>
+            <ListItemText primary={item} />
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
 
-            {/* Sign Up Modal */}
-            <SignUpModal open={signUpOpen} handleClose={handleSignUpClose} />
-        </header>
-    );
+  return (
+    <>
+      <AppBar position="static" sx={{ bgcolor: 'black' }}>
+        <Container maxWidth="xl">
+          <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <img src={logo} alt='Valor Insight logo' style={{ height: 40, width: 40, marginRight: 8 }} />
+              <Typography
+                variant="h6"
+                noWrap
+                component="div"
+                sx={{
+                  display: { xs: 'none', md: 'flex' },
+                  fontFamily: 'monospace',
+                  fontWeight: 'bold',
+                  color: 'inherit',
+                  textDecoration: 'none',
+                }}
+              >
+                VALOR INSIGHT
+              </Typography>
+            </Box>
+
+            <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
+              <Box sx={{ position: 'relative', backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 1, width: '100%', maxWidth: 400 }}>
+                <Box sx={{ position: 'absolute', display: 'flex', alignItems: 'center', height: '100%', pl: 2, pointerEvents: 'none' }}>
+                  <SearchIcon />
+                </Box>
+                <InputBase
+                  placeholder="Search…"
+                  inputProps={{ 'aria-label': 'search' }}
+                  sx={{
+                    color: 'inherit',
+                    width: '100%',
+                    '& .MuiInputBase-input': {
+                      padding: theme.spacing(1, 1, 1, 0),
+                      paddingLeft: `calc(1em + ${theme.spacing(4)})`,
+                      transition: theme.transitions.create('width'),
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
+
+            <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
+              <IconButton
+                size="large"
+                aria-label="open drawer"
+                edge="start"
+                color="inherit"
+                onClick={handleDrawerToggle}
+              >
+                <MenuIcon />
+              </IconButton>
+            </Box>
+
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+              {menuItems.map((item) => (
+                <Button key={item} color="inherit" sx={{ my: 2, display: 'block' }}>
+                  {item}
+                </Button>
+              ))}
+              {loggedIn ? (
+                <Avatar alt="User Avatar" src={logo} sx={{ ml: 2 }} />
+              ) : (
+                <Button variant="contained" color="primary" onClick={handleMode} sx={{ ml: 2 }}>
+                  Sign In
+                </Button>
+              )}
+            </Box>
+          </Toolbar>
+        </Container>
+      </AppBar>
+
+      <Drawer
+        variant="temporary"
+        anchor="right"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true,
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 240 },
+        }}
+      >
+        {drawer}
+      </Drawer>
+
+      <SignInModal />
+    </>
+  );
 };
 
 export default Header;
