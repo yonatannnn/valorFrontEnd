@@ -30,6 +30,7 @@ const Header = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const { loggedIn } = useSelector((state) => state.user);
+  const isLoggedIn = localStorage.getItem('userState') ? JSON.parse(localStorage.getItem('userState')).loggedIn : false;
 
   const handleMode = () => {
     dispatch(openModal());
@@ -125,7 +126,10 @@ const Header = () => {
                   {item}
                 </Button>
               ))}
-              {loggedIn ? (
+              
+
+              {
+              isLoggedIn ? (
                 <Avatar alt="User Avatar" src={logo} sx={{ ml: 2 }} />
               ) : (
                 <Button variant="contained" color="primary" onClick={handleMode} sx={{ ml: 2 }}>

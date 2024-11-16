@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React, { useState, useCallback } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import {uploadImage} from '../services/profile_picture';
+
 import { 
   Modal, 
   Box, 
@@ -13,31 +15,35 @@ import {
   Stepper,
   Step,
   StepLabel,
-  FormHelperText
-} from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
-import { closeModal, toggleMode } from '../redux/slices/modalSlice';
-import logo from '../assets/logo.jpg';
-import { verifyCode, sendVerificationCode , registerUser } from '../redux/slices/userSlice';
+  Avatar,
+  CircularProgress
+} from '@mui/material'
+import { Close as CloseIcon, CloudUpload as CloudUploadIcon } from '@mui/icons-material'
+import { closeModal, toggleMode } from '../redux/slices/modalSlice'
+import { 
+  sendVerificationCode, 
+  verifyCode, 
+  registerUser
+} from '../redux/slices/userSlice'
+import { uploadImage as uploadImageService } from '../services/profile_picture'
 
-const SignInModal = () => {
-  const dispatch = useDispatch();
-  const { open, mode } = useSelector((state) => state.modal);
-  const { status, error } = useSelector((state) => state.user);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [activeStep, setActiveStep] = useState(0);
+export default function SignInModal() {
+  const dispatch = useDispatch()
+  const { open, mode } = useSelector((state) => state.modal)
+  const { status, error } = useSelector((state) => state.user)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const [activeStep, setActiveStep] = useState(0)
 
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [username, setUsername] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [verificationCode, setVerificationCode] = useState('')
+  const [profilePicture, setProfilePicture] = useState(null)
 
   const [errors, setErrors] = useState({
     email: '',
@@ -47,120 +53,138 @@ const SignInModal = () => {
     firstName: '',
     lastName: '',
     phoneNumber: '',
-    verificationCode: ''
-  });
+    verificationCode: '',
+    general: ''
+  })
 
-  const handleClose = () => {
-    dispatch(closeModal());
-    setActiveStep(0);
-  };
+  const handleClose = useCallback(() => {
+    dispatch(closeModal())
+    setActiveStep(0)
+  }, [dispatch])
 
-  const handleMode = () => {
-    dispatch(toggleMode());
-    setActiveStep(0);
-  };
+  const handleMode = useCallback(() => {
+    dispatch(toggleMode())
+    setActiveStep(0)
+  }, [dispatch])
 
-  const handleNext = () => {
-    setActiveStep((prevStep) => prevStep + 1);
-  };
+  const handleNext = useCallback(() => {
+    setActiveStep((prevStep) => prevStep + 1)
+  }, [])
 
-  const handleBack = () => {
-    setActiveStep((prevStep) => prevStep - 1);
-  };
+  const handleBack = useCallback(() => {
+    setActiveStep((prevStep) => prevStep - 1)
+  }, [])
 
- 
-  const validateInputs = () => {
-    let tempErrors = {};
-    let isValid = true;
+  const validateInputs = useCallback(() => {
+    let tempErrors = {}
+    let isValid = true
 
     if (!email) {
-      tempErrors.email = 'Email is required';
-      isValid = false;
+      tempErrors.email = 'Email is required'
+      isValid = false
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      tempErrors.email = 'Email is not valid';
-      isValid = false;
+      tempErrors.email = 'Email is not valid'
+      isValid = false
     }
 
     if (!password) {
-      tempErrors.password = 'Password is required';
-      isValid = false;
+      tempErrors.password = 'Password is required'
+      isValid = false
     }
 
     if (mode === 'signup' && confirmPassword !== password) {
-      tempErrors.confirmPassword = 'Passwords do not match';
-      isValid = false;
+      tempErrors.confirmPassword = 'Passwords do not match'
+      isValid = false
     }
 
     if (mode === 'signup' && !firstName) {
-      tempErrors.firstName = 'First Name is required';
-      isValid = false;
+      tempErrors.firstName = 'First Name is required'
+      isValid = false
     }
 
     if (mode === 'signup' && !lastName) {
-      tempErrors.lastName = 'Last Name is required';
-      isValid = false;
+      tempErrors.lastName = 'Last Name is required'
+      isValid = false
     }
 
     if (!username) {
-      tempErrors.username = 'Username is required';
-      isValid = false;
+      tempErrors.username = 'Username is required'
+      isValid = false
     }
 
     if (activeStep === 1 && !verificationCode) {
-      tempErrors.verificationCode = 'Verification Code is required';
-      isValid = false;
+      tempErrors.verificationCode = 'Verification Code is required'
+      isValid = false
     }
 
-    setErrors(tempErrors);
-    return isValid;
-  };
+    setErrors(tempErrors)
+    return isValid
+  }, [email, password, confirmPassword, firstName, lastName, username, verificationCode, mode, activeStep])
 
-  const handleSendCode = () => {
+  const handleSendCode = useCallback(() => {
     if (validateInputs()) {
-      dispatch(sendVerificationCode(email));
-      setActiveStep(1);
+      dispatch(sendVerificationCode(email))
+      handleNext()
     }
-  };
+  }, [dispatch, email, validateInputs, handleNext])
 
-  const handleVerifyCode = () => {
+  const handleVerifyCode = useCallback(() => {
     if (validateInputs()) {
       dispatch(verifyCode({ email, code: verificationCode }))
         .then((result) => {
-          console.log(result);
           if (result.type === 'user/verifyCode/fulfilled') {
-            console.log('Verification successful');
-            
-            // If verification was successful, register the user
-            const newUser = {
-              email,
-              password,
-              username,
-              firstName,
-              lastName,
-              phoneNumber,
-  
-            };
-            console.log('newUser', newUser);
-            dispatch(registerUser(newUser)); // Dispatch registerUser action
-            setActiveStep(2); // Proceed to the final step
+            handleNext()
           } else {
-            // Handle verification failure
             setErrors((prevErrors) => ({
               ...prevErrors,
               verificationCode: 'Verification failed, try again.',
-            }));
+            }))
           }
         })
-        .catch((error) => {
+        .catch(() => {
           setErrors((prevErrors) => ({
             ...prevErrors,
             verificationCode: 'Verification failed, try again.',
-          }));
-        });
+          }))
+        })
     }
-  };
+  }, [dispatch, email, verificationCode, validateInputs, handleNext])
+
+  const handleRegister = useCallback(async () => {
+    if (validateInputs()) {
+        try {
+            let profilePictureUrl = null;
+            if (profilePicture) {
+                profilePictureUrl = await uploadImage(profilePicture);
+            }
+            const newUser = {
+                email,
+                password,
+                username,
+                first_name: firstName,
+                last_name: lastName,
+                phone_number: phoneNumber,
+                profile_picture: profilePictureUrl,
+            };
+            await dispatch(registerUser(newUser)).unwrap();
+            handleClose();
+        } catch (error) {
+            console.error("Registration error:", error);
+            setErrors((prevErrors) => ({
+                ...prevErrors,
+                general: error?.message || 'Registration failed. Please try again.',
+            }));
+        }
+    }
+}, [dispatch, email, password, username, firstName, lastName, phoneNumber, profilePicture, validateInputs, handleClose]);
 
 
+  const handleFileChange = useCallback((event) => {
+    const file = event.target.files[0]
+    if (file) {
+      setProfilePicture(file)
+    }
+  }, [])
 
   const renderStepContent = (step) => {
     switch (step) {
@@ -254,28 +278,48 @@ const SignInModal = () => {
               />
             )}
           </>
-        );
+        )
       case 1:
         return (
-          <>
-            <TextField 
-              label="Verification Code" 
-              variant="outlined" 
-              fullWidth 
-              size="small" 
-              value={verificationCode} 
-              onChange={(e) => setVerificationCode(e.target.value)}
-              error={!!errors.verificationCode} 
-              helperText={errors.verificationCode}
-              sx={{ mb: 2 }} 
-              placeholder="Enter the 6-digit code sent to your email"
+          <TextField 
+            label="Verification Code" 
+            variant="outlined" 
+            fullWidth 
+            size="small" 
+            value={verificationCode} 
+            onChange={(e) => setVerificationCode(e.target.value)}
+            error={!!errors.verificationCode} 
+            helperText={errors.verificationCode}
+            sx={{ mb: 2 }} 
+            placeholder="Enter the 6-digit code sent to your email"
+          />
+        )
+      case 2:
+        return (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <Avatar
+              src={profilePicture ? URL.createObjectURL(profilePicture) : ''}
+              sx={{ width: 100, height: 100 }}
             />
-          </>
-        );
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<CloudUploadIcon />}
+            >
+              Upload Profile Picture
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+            </Button>
+          </Box>
+        )
       default:
-        return null;
+        return null
     }
-  };
+  }
 
   return (
     <Modal open={open} onClose={handleClose}>
@@ -307,22 +351,31 @@ const SignInModal = () => {
         </IconButton>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
-          <img src={logo} alt="Logo" style={{ width: 60, height: 60, borderRadius: '50%', marginBottom: '1rem' }} />
           <Typography variant="h5" component="h2" sx={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>
-            Valor Insight
+            {mode === 'signin' ? 'Sign In' : 'Sign Up'}
           </Typography>
         </Box>
 
-        <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
-          <Step>
-            <StepLabel>{mode === 'signin' ? 'Sign In' : 'Sign Up'}</StepLabel>
-          </Step>
-          <Step>
-            <StepLabel>Verify</StepLabel>
-          </Step>
-        </Stepper>
+        {mode === 'signup' && (
+          <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3 }}>
+            <Step>
+              <StepLabel>Account Details</StepLabel>
+            </Step>
+            <Step>
+              <StepLabel>Verify</StepLabel>
+            </Step>
+            <Step>
+              <StepLabel>Profile Picture</StepLabel>
+            </Step>
+          </Stepper>
+        )}
 
         <Box component="form" sx={{ display: 'flex', flexDirection: 'column' }}>
+          {errors.general && (
+            <Typography color="error" sx={{ mt: 2, mb: 2 }}>
+              {errors.general}
+            </Typography>
+          )}
           {renderStepContent(activeStep)}
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
@@ -338,17 +391,33 @@ const SignInModal = () => {
             <Button
               variant="contained"
               color="primary"
-              onClick={activeStep === 1 ? handleVerifyCode : handleSendCode}
+              onClick={
+                mode === 'signin'
+                  ? handleSendCode
+                  : activeStep === 0
+                  ? handleSendCode
+                  : activeStep === 1
+                  ? handleVerifyCode
+                  : handleRegister
+              }
               sx={{ textTransform: 'none' }}
-              disabled={status === 'loading'}
+              disabled={status === 'loading' || status === 'uploading'}
             >
-              {status === 'loading' ? 'Processing...' : (activeStep === 1 ? 'Confirm' : (mode === 'signin' ? 'Sign In' : 'Sign Up'))}
+              {status === 'loading' || status === 'uploading' ? (
+                <CircularProgress size={24} />
+              ) : (
+                mode === 'signin'
+                  ? 'Sign In'
+                  : activeStep === 0
+                  ? 'Next'
+                  : activeStep === 1
+                  ? 'Verify'
+                  : 'Register'
+              )}
             </Button>
           </Box>
         </Box>
       </Paper>
     </Modal>
-  );
-};
-
-export default SignInModal;
+  )
+}
